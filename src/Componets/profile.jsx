@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Helmet } from 'react-helmet-async';
+import useAuthStore from '../store/authStore';
+import api from '../utils/api';
 
 const TABS = [
   { id: 'profile',   label: 'My Profile',    icon: 'ri-user-line' },
@@ -49,12 +51,39 @@ const Profile = () => {
   const [addAddrMode, setAddAddrMode] = useState(false);
   const [addrForm, setAddrForm] = useState({ name: '', phone: '', address: '', city: '', state: 'Madhya Pradesh', pincode: '', isDefault: false });
 
+  const { user: authUser, isLoggedIn, logout } = useAuthStore();
+
   useEffect(() => {
+    // Try authStore first (Google/backend JWT users)
+    if (authUser) {
+      setUser(authUser);
+      setForm({ name: authUser.name || '', email: authUser.email || '', phone: authUser.phone || '' });
+      return;
+    }
+    // Fallback: localStorage user (email/password legacy users)
     const u = JSON.parse(localStorage.getItem('user'));
-    if (!u) { navigate('/login'); return; }
-    setUser(u);
-    setForm({ name: u.name || '', email: u.email || '', phone: u.phone || '' });
-  }, []);
+    if (u) {
+      setUser(u);
+      setForm({ name: u.name || '', email: u.email || '', phone: u.phone || '' });
+      return;
+    }
+    // Check JWT token — try fetching from backend
+    const token = localStorage.getItem('narmavya_token');
+    if (token) {
+      api.get('/auth/me')
+        .then(({ data }) => {
+          if (data.success) {
+            setUser(data.user);
+            setForm({ name: data.user.name || '', email: data.user.email || '', phone: data.user.phone || '' });
+          } else {
+            navigate('/login');
+          }
+        })
+        .catch(() => navigate('/login'));
+      return;
+    }
+    navigate('/login');
+  }, [authUser]);
 
   const saveProfile = () => {
     if (!form.name.trim()) { toast.error('Name cannot be empty'); return; }

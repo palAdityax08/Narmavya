@@ -39,8 +39,15 @@ const Detail = () => {
     address: '', city: '', state: 'Madhya Pradesh', landmark: '', altphone: '',
   });
 
-  // Pre-fill from user's saved default address
+  // Pre-fill from: (1) saved default address, (2) last used address, (3) empty
   useEffect(() => {
+    // Layer 1: last address used in this session (most recent checkout)
+    const lastUsed = JSON.parse(sessionStorage.getItem('delivery_address') || 'null');
+    if (lastUsed?.name) {
+      setForm(prev => ({ ...prev, ...lastUsed }));
+      return;
+    }
+    // Layer 2: saved address from user profile in localStorage
     const user = JSON.parse(localStorage.getItem('user')) || {};
     const addresses = user.addresses || [];
     const def = addresses.find(a => a.isDefault) || addresses[0];

@@ -4,29 +4,56 @@ import Nav from './nav';
 import Footer from './Others/Footer';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import api from '../utils/api';
 
 const getOrderStatus = (order) => {
-  const placed = new Date(order.date).getTime();
+  const placed = new Date(order.date || order.createdAt).getTime();
   const hoursElapsed = (Date.now() - placed) / (1000 * 60 * 60);
-  if (hoursElapsed < 1)   return { step: 0, label: 'Confirmed',         color: '#E8650A' };
-  if (hoursElapsed < 24)  return { step: 1, label: 'Processing',        color: '#D4A017' };
-  if (hoursElapsed < 72)  return { step: 2, label: 'Shipped',           color: '#1B6B3A' };
-  if (hoursElapsed < 120) return { step: 3, label: 'Out for Delivery',  color: '#059669' };
+  if (hoursElapsed < 1)   return { step: 0, label: 'Confirmed',        color: '#E8650A' };
+  if (hoursElapsed < 24)  return { step: 1, label: 'Processing',       color: '#D4A017' };
+  if (hoursElapsed < 72)  return { step: 2, label: 'Shipped',          color: '#1B6B3A' };
+  if (hoursElapsed < 120) return { step: 3, label: 'Out for Delivery', color: '#059669' };
   return { step: 4, label: 'Delivered', color: '#16a34a' };
+};
+
+// Merge local + backend orders, deduplicate by orderId
+const mergeOrders = (local, remote) => {
+  const map = new Map();
+  [...local, ...remote].forEach(o => {
+    if (!map.has(o.orderId)) map.set(o.orderId, o);
+  });
+  return [...map.values()].sort((a, b) =>
+    new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
+  );
 };
 
 const Orders = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [orders, setOrders]   = useState([]);
+  const [filter, setFilter]   = useState('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem('user')) || {};
-    setOrders(u.orders || []);
+    // Always show local orders immediately
+    const local = JSON.parse(localStorage.getItem('user'))?.orders || [];
+    setOrders(local);
+    setLoading(false);
+
+    // Then try to merge with backend orders
+    const token = localStorage.getItem('narmavya_token');
+    if (token) {
+      api.get('/orders/mine')
+        .then(({ data }) => {
+          if (data?.orders?.length) {
+            setOrders(prev => mergeOrders(prev, data.orders));
+          }
+        })
+        .catch(() => {});  // silently fail — local orders shown regardless
+    }
   }, []);
 
   const filtered = filter === 'all' ? orders
-    : filter === 'active' ? orders.filter(o => getOrderStatus(o).step < 4)
+    : filter === 'active'    ? orders.filter(o => getOrderStatus(o).step < 4)
     : orders.filter(o => getOrderStatus(o).step === 4);
 
   return (
@@ -60,7 +87,13 @@ const Orders = () => {
             ))}
           </div>
 
-          {filtered.length === 0 && (
+          {loading && (
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-2 border-[#E8650A] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!loading && filtered.length === 0 && (
             <div className="text-center py-24">
               <div className="text-6xl mb-4">📦</div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">No Orders Here</h3>
@@ -75,19 +108,20 @@ const Orders = () => {
           <div className="space-y-4">
             {filtered.map((order, idx) => {
               const status = getOrderStatus(order);
+              const orderItems = order.items || [];
               return (
-                <motion.div key={order.orderId}
+                <motion.div key={order.orderId || order._id}
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: idx * 0.06 }}
-                  onClick={() => navigate(`/orders/${order.orderId}`)}
+                  onClick={() => navigate(`/orders/${order.orderId || order._id}`)}
                   className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow"
                   whileHover={{ y: -2 }}
                 >
                   <div className="flex items-start justify-between flex-wrap gap-4">
                     <div>
-                      <p className="font-bold text-gray-900 font-mono text-sm">#{order.orderId}</p>
+                      <p className="font-bold text-gray-900 font-mono text-sm">#{order.orderId || order._id}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(order.date || order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                     <span className="px-3 py-1.5 rounded-full text-xs font-bold"
@@ -97,26 +131,29 @@ const Orders = () => {
                   </div>
 
                   {/* Product thumbs */}
-                  <div className="flex items-center gap-2 my-4">
-                    {order.items.slice(0, 5).map((item, i) => (
-                      <div key={i} className="w-14 h-14 rounded-xl overflow-hidden border border-gray-100 flex-shrink-0">
-                        <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                    {order.items.length > 5 && (
-                      <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
-                        +{order.items.length - 5}
-                      </div>
-                    )}
-                  </div>
+                  {orderItems.length > 0 && (
+                    <div className="flex items-center gap-2 my-4">
+                      {orderItems.slice(0, 5).map((item, i) => (
+                        <div key={i} className="w-14 h-14 rounded-xl overflow-hidden border border-gray-100 flex-shrink-0">
+                          <img src={item.url} alt={item.title} className="w-full h-full object-cover"
+                            onError={e => e.target.src = 'https://via.placeholder.com/56?text=🛍️'} />
+                        </div>
+                      ))}
+                      {orderItems.length > 5 && (
+                        <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+                          +{orderItems.length - 5}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-gray-500">
-                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                      {orderItems.length} item{orderItems.length !== 1 ? 's' : ''}
                       {order.paymentMethod && <span className="ml-2 uppercase text-gray-400">· {order.paymentMethod}</span>}
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="font-black text-[#E8650A] text-lg">₹{order.grandTotal?.toLocaleString()}</p>
+                      <p className="font-black text-[#E8650A] text-lg">₹{(order.grandTotal || 0).toLocaleString()}</p>
                       <i className="ri-arrow-right-s-line text-gray-400" />
                     </div>
                   </div>
