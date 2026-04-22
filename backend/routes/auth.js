@@ -12,23 +12,38 @@ const User           = require('../models/User');
 const authMiddleware = require('../middleware/authMiddleware');
 
 // ── Initialize Firebase Admin SDK ONCE at module load ─────────────────────────
-// This is more reliable than lazy-loading it inside each request handler.
+// Uses env vars instead of a JSON file — required for Vercel / serverless.
 if (!admin.apps.length) {
   try {
-    const serviceAccountPath = path.resolve(
-      __dirname,
-      '../firebase-service-account.json'
-    );
-    const serviceAccount = require(serviceAccountPath);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    console.log('✅ Firebase Admin SDK initialized');
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY
+      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      : undefined;
+
+    if (privateKey && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId:   process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey,
+        }),
+      });
+      console.log('✅ Firebase Admin SDK initialized (env vars)');
+    } else {
+      // Fallback: try local JSON file (only works in local dev)
+      try {
+        const path = require('path');
+        const serviceAccount = require(path.resolve(__dirname, '../firebase-service-account.json'));
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+        console.log('✅ Firebase Admin SDK initialized (local JSON)');
+      } catch {
+        console.warn('⚠️  Firebase Admin SDK: missing env vars AND no local JSON. Google Sign-In will not work.');
+      }
+    }
   } catch (err) {
     console.error('⚠️  Firebase Admin SDK failed to initialize:', err.message);
-    console.error('   → Make sure backend/firebase-service-account.json exists');
   }
 }
+
 
 // ── Helper: sign a JWT ────────────────────────────────────────────────────────
 const signToken = (userId) =>

@@ -1,4 +1,4 @@
-# Logs
+# ─── Logs ────────────────────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,12 +7,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# ─── Build outputs ───────────────────────────────────────────────────────────
 node_modules
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# ─── Editor ──────────────────────────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -23,12 +24,13 @@ dist-ssr
 *.sln
 *.sw?
 
-# Backend secrets — NEVER commit these
+# ─── Backend secrets — NEVER commit these ────────────────────────────────────
 backend/.env
 backend/firebase-service-account.json
 backend/node_modules
 
-# Frontend env
+# ─── Frontend env ─────────────────────────────────────────────────────────────
 .env
 .env.local
 .env.production
+# NOTE: .env.example files ARE committed (they contain no real secrets)

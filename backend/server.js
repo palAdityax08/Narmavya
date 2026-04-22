@@ -15,16 +15,21 @@ const app  = express();
 const PORT = process.env.PORT || 5000;
 
 // ── Middleware ─────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  ...(process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',').map(o => o.trim()) : []),
+];
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow any localhost port (Vite can use 5173, 5174, 5175...)
-    if (!origin || origin.startsWith('http://localhost')) {
-      callback(null, true);
-    } else if (process.env.CLIENT_ORIGIN && origin === process.env.CLIENT_ORIGIN) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS: ' + origin));
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(o => origin === o || origin.endsWith('.vercel.app'))) {
+      return callback(null, true);
     }
+    callback(new Error('Not allowed by CORS: ' + origin));
   },
   credentials: true,
 }));
