@@ -453,7 +453,7 @@ const Home = () => {
 
           <div className="space-y-4 mt-4">
             {[
-              { num: '100+', label: 'Authentic MP Products' },
+              { num: '150+', label: 'Authentic MP Products' },
               { num: '12+', label: 'Districts Covered' },
               { num: '100%', label: 'GI Verified' },
             ].map((s) => (
