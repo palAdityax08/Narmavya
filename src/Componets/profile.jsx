@@ -126,11 +126,11 @@ const Profile = () => {
       </Helmet>
       <Nav />
 
-      <main className="pt-28 pb-20 max-w-6xl mx-auto px-4">
+      <main className="pt-20 sm:pt-28 pb-20 max-w-6xl mx-auto px-4">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="flex items-center gap-6 mb-10">
-          <div className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-black text-white shadow-xl flex-shrink-0"
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-8 sm:mb-10">
+          <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #E8650A, #1B6B3A)' }}>
             {userInitials()}
           </div>

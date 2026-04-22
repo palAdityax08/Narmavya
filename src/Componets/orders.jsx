@@ -36,7 +36,7 @@ const Orders = () => {
         <meta name="description" content="Track your Narmavya orders, view invoices and delivery status." />
       </Helmet>
       <Nav />
-      <main className="pt-28 pb-20 max-w-4xl mx-auto px-4">
+      <main className="pt-20 sm:pt-28 pb-20 max-w-4xl mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center justify-between mb-8">
             <div>

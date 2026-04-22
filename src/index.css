@@ -37,8 +37,42 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent iOS font-size auto-adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 ::selection { background: var(--c-saffron); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE OPTIMISATIONS
+═══════════════════════════════════════════════════════════════════ */
+
+/* Eliminate 300ms tap delay on all interactive elements */
+button, a, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+}
+
+/* Minimum touch target 44px (Apple HIG & Google Material) for buttons only */
+button {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Remove tap highlight flash (we style active states ourselves) */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Active-press feedback for touch */
+button:active, a:active { opacity: 0.82; }
+
+/* Safe-area padding for iPhone notch / Dynamic Island */
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe     { padding-top:    env(safe-area-inset-top,    0px); }
+.pb-safe     { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
 
 /* ═══════════════════════════════════════════════════════════════════
    SCROLLBAR
@@ -436,4 +470,66 @@ input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.2); }
 @keyframes shimmer {
   0%   { background-position: -800px 0; }
   100% { background-position:  800px 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE UTILITY: hide scrollbar while keeping scroll functionality
+═══════════════════════════════════════════════════════════════════ */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE BOTTOM SAFE-AREA STICKY BAR FIX
+═══════════════════════════════════════════════════════════════════ */
+.sticky-mobile-actions {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PRODUCT CARD — MOBILE FULL WIDTH OVERRIDE
+═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 639px) {
+  .product-card-editorial {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reduce hero text size floor on very small phones (< 380px) */
+  .hero-headline-1 { font-size: clamp(2.4rem, 10vw, 7rem); }
+  .hero-headline-2 { font-size: clamp(2.8rem, 11vw, 8rem); }
+
+  /* Remove heavy parallax on mobile for performance */
+  .parallax-mobile-off { transform: none !important; }
+
+  /* Testimonial card shrinks to viewport-relative width */
+  .testimonial-card { width: clamp(260px, 85vw, 320px) !important; }
+}
+
+/* Touch-friendly filter pills */
+@media (max-width: 639px) {
+  .filter-pill { padding: 10px 18px; font-size: 0.82rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE STICKY ADD-TO-CART BAR
+═══════════════════════════════════════════════════════════════════ */
+.mobile-sticky-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: rgba(253, 246, 236, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(232, 101, 10, 0.12);
+  padding: 12px 20px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: none;
+}
+@media (max-width: 1023px) {
+  .mobile-sticky-cta { display: flex; gap: 12px; align-items: center; }
 }

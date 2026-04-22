@@ -65,7 +65,7 @@ const Detail = () => {
     <div className="min-h-screen bg-[#FDF6EC] selection:bg-[#E8650A] selection:text-white gond-texture flex flex-col">
       <Nav />
 
-      <main className="flex-grow pt-28 pb-20">
+      <main className="flex-grow pt-20 sm:pt-28 pb-20">
         <div className="max-w-3xl mx-auto px-4">
           {/* ─── Step Indicator ──────────────────────────────── */}
           <motion.div

@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { toast } from 'react-toastify';
+import useCartStore from '../../store/cartStore';
+import useWishlistStore from '../../store/wishlistStore';
 
 /* ─── Star Rating ─────────────────────────────────────────────── */
 const StarRating = ({ rating }) => (
@@ -129,29 +131,23 @@ const Cart = ({
   artisan, description, stock, inStock,
 }) => {
   const navigate   = useNavigate();
-  const [qty, setQty]               = useState(1);
-  const [wishlisted, setWishlisted] = useState(false);
-  const [added, setAdded]           = useState(false);
-  const [imgLoaded, setImgLoaded]   = useState(false);
-  const [quickLook, setQuickLook]   = useState(false);
+  const [qty, setQty]             = useState(1);
+  const [added, setAdded]         = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [quickLook, setQuickLook] = useState(false);
 
-  useEffect(() => {
-    const wl = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    setWishlisted(wl.some((i) => i.id === id));
-  }, [id]);
+  // ── Zustand stores ──────────────────────────────────────────────
+  const { addItem, isInCart } = useCartStore();
+  const { toggleItem, isWishlisted } = useWishlistStore();
+  const wishlisted = isWishlisted(id);
 
   const toggleWishlist = (e) => {
     e.stopPropagation();
-    const wl = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    if (wishlisted) {
-      localStorage.setItem('wishlist', JSON.stringify(wl.filter((i) => i.id !== id)));
-      setWishlisted(false);
-      toast.info('Removed from wishlist');
-    } else {
-      wl.push({ id, url, title, price, originalPrice, rating, badge, origin, category });
-      localStorage.setItem('wishlist', JSON.stringify(wl));
-      setWishlisted(true);
+    const added = toggleItem({ id, url, title, price, originalPrice, rating, reviews, badge, origin, category, artisan, description });
+    if (added) {
       toast.success('Saved to wishlist ❤️', { icon: false });
+    } else {
+      toast.info('Removed from wishlist');
     }
   };
 
@@ -162,16 +158,9 @@ const Cart = ({
       navigate('/login', { state: { returnTo: '/addToCart' } });
       return;
     }
-    const user = JSON.parse(localStorage.getItem('user')) || {};
-    if (!user.products) user.products = [];
+
     const p = product || { id, url, title, price, originalPrice, rating, badge, origin, category, artisan, description };
-    const existing = user.products.find(x => x.id === p.id);
-    if (existing) {
-      existing.quantity = (existing.quantity || 1) + qty;
-    } else {
-      user.products.push({ id: p.id, title: p.title, price: p.price, url: p.url || p.image, quantity: qty, origin: p.origin });
-    }
-    localStorage.setItem('user', JSON.stringify(user));
+    addItem(p, qty);
     setAdded(true);
     toast.success(`${(p.title || title).slice(0, 28)}… added! 🛍️`);
     setTimeout(() => setAdded(false), 1500);
@@ -292,7 +281,7 @@ const Cart = ({
               className={`flex-1 h-9 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1.5 transition-all duration-300 ${added ? 'scale-95' : ''}`}
               style={{ background: added ? 'linear-gradient(135deg, #1B6B3A, #0F4A27)' : 'linear-gradient(135deg, #E8650A, #C4500A)' }}
             >
-              {added ? <><i className="ri-check-line" /> Added!</> : <><i className="ri-shopping-bag-line" /> Add</>}
+              {added ? <><i className="ri-check-line" />Added!</> : <><i className="ri-shopping-bag-line" />Add</>}
             </MagneticBtn>
           </div>
         </div>

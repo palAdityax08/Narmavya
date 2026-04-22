@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import Nav from './nav';
 import Footer from './Others/Footer';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Cart from './Others/carts';
+import useWishlistStore from '../store/wishlistStore';
 
 /* ─── Reveal animation wrapper ────────────────────────────────── */
 const Reveal = ({ children, className = '', delay = 0 }) => {
@@ -25,24 +26,20 @@ const Reveal = ({ children, className = '', delay = 0 }) => {
 };
 
 const Wishlist = () => {
-  const [items, setItems] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const wl = JSON.parse(localStorage.getItem('wishlist')) || [];
-    setItems(wl);
-  }, []);
+  // ── Zustand wishlist store ───────────────────────────────────
+  const items       = useWishlistStore((s) => s.items);
+  const removeItem  = useWishlistStore((s) => s.removeItem);
+  const clearAll    = useWishlistStore((s) => s.clearAll);
 
   const removeFromWishlist = (id) => {
-    const newWl = items.filter((i) => i.id !== id);
-    localStorage.setItem('wishlist', JSON.stringify(newWl));
-    setItems(newWl);
+    removeItem(id);
     toast.info('Removed from wishlist');
   };
 
-  const clearAll = () => {
-    localStorage.setItem('wishlist', JSON.stringify([]));
-    setItems([]);
+  const handleClearAll = () => {
+    clearAll();
     toast.info('Wishlist cleared');
   };
 
@@ -82,7 +79,7 @@ const Wishlist = () => {
         {items.length > 0 && (
           <Reveal className="flex justify-end mb-6">
             <button
-              onClick={clearAll}
+              onClick={handleClearAll}
               className="text-sm text-gray-400 hover:text-red-500 flex items-center gap-1.5 transition-colors font-medium"
             >
               <i className="ri-delete-bin-line" /> Clear All

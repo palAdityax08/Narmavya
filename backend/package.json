@@ -1,0 +1,26 @@
+{
+  "name": "narmavya-backend",
+  "version": "1.0.0",
+  "description": "Narmavya e-commerce REST API — MongoDB + Express",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "predev": "node scripts/killPort.js",
+    "dev": "nodemon server.js",
+    "seed": "node scripts/seedProducts.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.8.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.2",
+    "razorpay": "^2.9.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

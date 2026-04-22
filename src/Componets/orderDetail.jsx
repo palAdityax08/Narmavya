@@ -60,7 +60,7 @@ const OrderDetail = () => {
         <title>Order #{order.orderId} — Narmavya</title>
       </Helmet>
       <Nav />
-      <main className="pt-28 pb-20 max-w-4xl mx-auto px-4">
+      <main className="pt-20 sm:pt-28 pb-20 max-w-4xl mx-auto px-4">
         {/* Back */}
         <button onClick={() => navigate('/orders')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#E8650A] transition-colors mb-6 font-medium">
           <i className="ri-arrow-left-line" /> Back to Orders
@@ -90,7 +90,7 @@ const OrderDetail = () => {
           <h2 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
             <i className="ri-truck-line text-[#E8650A]" /> Delivery Tracking
           </h2>
-          <div className="relative flex justify-between">
+          <div className="relative flex justify-between overflow-x-auto scrollbar-hide py-2">
             {/* Progress line background */}
             <div className="absolute top-5 left-5 right-5 h-0.5 bg-gray-200 z-0" />
             {/* Progress line fill */}

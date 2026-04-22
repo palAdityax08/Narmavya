@@ -75,7 +75,7 @@ const About = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.3 }}
-            className="text-6xl md:text-8xl font-black text-white leading-[1.1] mb-8 font-display drop-shadow-2xl"
+            className="text-4xl sm:text-6xl md:text-8xl font-black text-white leading-[1.1] mb-6 sm:mb-8 font-display drop-shadow-2xl"
             style={{ 
               textShadow: '0 10px 40px rgba(0, 0, 0, 0)',
               letterSpacing: '-0.02em'
@@ -90,7 +90,7 @@ const About = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.6 }}
-            className="text-white/80 text-lg md:text-xl font-light max-w-2xl mx-auto"
+            className="text-white/80 text-base sm:text-lg md:text-xl font-light max-w-2xl mx-auto hidden sm:block"
           >
             Preserving centuries of artistry, honoring the hands that weave magic, and bringing genuine MP heritage to the world.
           </motion.p>
@@ -98,7 +98,7 @@ const About = () => {
       </header>
 
       {/* The Bento Grid */}
-      <main className="max-w-[1400px] mx-auto px-6 -mt-32 relative z-30">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 -mt-16 sm:-mt-32 relative z-30">
         
         <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-[minmax(300px,_auto)_minmax(300px,_auto)_minmax(300px,_auto)] gap-6">
           
@@ -205,7 +205,7 @@ const About = () => {
 
         {/* Closing Heritage Banner */}
         <Reveal delay={0.3} className="mt-6 md:mt-20">
-          <div className="rounded-[3rem] overflow-hidden relative flex items-center justify-center py-32 px-10 text-center"
+          <div className="rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden relative flex items-center justify-center py-16 sm:py-32 px-6 sm:px-10 text-center"
                style={{ background: 'linear-gradient(135deg, #3E1B00 0%, #1B6B3A 100%)' }}>
             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/always-grey.png')]" />
             <div className="relative z-10 max-w-3xl mx-auto">

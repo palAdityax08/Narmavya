@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Nav from '../nav';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import useCartStore from '../../store/cartStore';
 
-const Product = ({ id, url, title, price, quantity, onRemove, onUpdateQty }) => (
+/* ─── Single cart item row ──────────────────────────────────── */
+const CartItem = ({ id, url, title, price, quantity, onRemove, onUpdateQty }) => (
   <motion.div
     layout
     initial={{ opacity: 0, y: 20 }}
@@ -48,43 +50,35 @@ const Product = ({ id, url, title, price, quantity, onRemove, onUpdateQty }) => 
 );
 
 const AddToCart = () => {
-  const [products, setProducts] = useState([]);
   const navigate = useNavigate();
 
-  const loadProducts = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) setProducts(user.products || []);
-  };
-
-  useEffect(() => { loadProducts(); }, []);
+  // ── Read directly from Zustand store ──────────────────────────
+  const items        = useCartStore((s) => s.items);
+  const removeItem   = useCartStore((s) => s.removeItem);
+  const updateQty    = useCartStore((s) => s.updateQty);
+  const totalPrice   = useCartStore((s) => s.totalPrice);
+  const grandTotal   = useCartStore((s) => s.grandTotal);
+  const deliveryCharge = useCartStore((s) => s.deliveryCharge);
 
   const onRemove = (id) => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const updated = user.products.filter((p) => p.id !== id);
-    user.products = updated;
-    localStorage.setItem('user', JSON.stringify(user));
-    setProducts(updated);
+    removeItem(id);
     toast.info('Item removed from cart');
   };
 
   const onUpdateQty = (id, qty) => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    user.products = user.products.map((p) => p.id === id ? { ...p, quantity: qty } : p);
-    localStorage.setItem('user', JSON.stringify(user));
-    setProducts(user.products);
+    updateQty(id, qty);
   };
 
-  const totalPrice = () =>
-    Math.ceil(products.reduce((acc, p) => acc + p.price * (p.quantity || 1), 0));
+  const subtotal    = totalPrice();
+  const delivery    = deliveryCharge();
+  const total       = grandTotal();
+  const totalItems  = items.reduce((acc, p) => acc + (p.quantity || 1), 0);
 
-  const totalItems = products.reduce((acc, p) => acc + (p.quantity || 1), 0);
-
-  if (products.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="min-h-screen bg-[#FDF6EC] selection:bg-[#E8650A] selection:text-white gond-texture">
         <Nav />
-        <div className="pt-28 flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-        
+        <div className="pt-20 sm:pt-28 flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
           <img
             src="/artisan/empty.png"
             alt="Empty Cart"
@@ -111,7 +105,7 @@ const AddToCart = () => {
   return (
     <div className="min-h-screen bg-[#FDF6EC] selection:bg-[#E8650A] selection:text-white gond-texture">
       <Nav />
-      <div className="pt-28 max-w-5xl mx-auto px-4 py-8">
+      <div className="pt-20 sm:pt-28 max-w-5xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-black text-gray-900 mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
           Your Cart
         </h1>
@@ -121,33 +115,38 @@ const AddToCart = () => {
           {/* Items List */}
           <div className="lg:col-span-2 space-y-4">
             <AnimatePresence>
-              {products.map((p) => (
-                <Product key={p.id} {...p} onRemove={onRemove} onUpdateQty={onUpdateQty} />
+              {items.map((p) => (
+                <CartItem
+                  key={p.id}
+                  {...p}
+                  onRemove={onRemove}
+                  onUpdateQty={onUpdateQty}
+                />
               ))}
             </AnimatePresence>
           </div>
 
           {/* Order Summary */}
           <div>
-            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white sticky top-32">
+            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white lg:sticky lg:top-32">
               <h3 className="font-bold text-gray-900 mb-4">Order Summary</h3>
               <div className="space-y-3 text-sm mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Subtotal ({totalItems} items)</span>
-                  <span className="font-semibold">₹{totalPrice().toLocaleString()}</span>
+                  <span className="font-semibold">₹{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Delivery</span>
-                  <span className="text-green-600 font-semibold">{totalPrice() >= 499 ? 'FREE' : '₹60'}</span>
+                  <span className="text-green-600 font-semibold">{delivery === 0 ? 'FREE' : `₹${delivery}`}</span>
                 </div>
-                {totalPrice() < 499 && (
+                {delivery > 0 && (
                   <p className="text-xs text-[#E8650A] bg-orange-50 px-3 py-2 rounded-lg">
-                    Add ₹{499 - totalPrice()} more for free delivery!
+                    Add ₹{499 - subtotal} more for free delivery!
                   </p>
                 )}
                 <div className="border-t pt-3 flex justify-between font-black text-lg">
                   <span>Total</span>
-                  <span className="text-[#E8650A]">₹{(totalPrice() + (totalPrice() >= 499 ? 0 : 60)).toLocaleString()}</span>
+                  <span className="text-[#E8650A]">₹{total.toLocaleString()}</span>
                 </div>
               </div>
               <button

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import lencheck from './lencheck';
 import SearchModal from './Others/SearchModal';
 import narmavyaLogo from '../assets/narmavya.png';
+import useCartStore from '../store/cartStore';
+import useWishlistStore from '../store/wishlistStore';
+import useAuthStore from '../store/authStore';
 
 /* ─── Language Context ──────────────────────────────────────────────── */
 export let globalLang = localStorage.getItem('narmavya_lang') || 'en';
@@ -24,14 +26,18 @@ export const useLang = () => {
 
 /* ─── Nav Component ─────────────────────────────────────────────────── */
 const Nav = () => {
-  const [menu,         setMenu]         = useState(false);
-  const [user,         setUser]         = useState(null);
-  const [totalp,       settotalp]       = useState(0);
-  const [login,        setlogin]        = useState(false);
-  const [name,         setname]         = useState('');
-  const [wishlistCount,setWishlistCount]= useState(0);
-  const [searchOpen,   setSearchOpen]   = useState(false);
-  const [profileOpen,  setProfileOpen]  = useState(false);
+  const [menu,        setMenu]        = useState(false);
+  const [searchOpen,  setSearchOpen]  = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // ── Auth state from Zustand (persisted to localStorage as 'narmavya-auth') ──
+  const { user, token, logout: authLogout, isAdmin } = useAuthStore();
+  const login = !!token;          // true when JWT exists
+  const name  = user?.name || '';
+
+  // ── Live cart & wishlist counts from Zustand (reactive, no polling) ──
+  const cartCount     = useCartStore((s) => s.totalItems());
+  const wishlistCount = useWishlistStore((s) => s.items.length);
 
   /* Scroll-aware states (same logic as examplenav.jsx) */
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
@@ -60,14 +66,7 @@ const Nav = () => {
     
   };
 
-  /* ── Data init ── */
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser) { setUser(storedUser); setname(storedUser.name || ''); setlogin(true); }
-    settotalp(lencheck());
-    const wl = JSON.parse(localStorage.getItem('wishlist')) || [];
-    setWishlistCount(wl.length);
-  }, []);
+  // Auth state now comes from authStore directly — no manual effect needed
 
   /* ── Scroll: auto-hide + past-hero detection ── */
   useEffect(() => {
@@ -103,6 +102,12 @@ const Nav = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  /* ── Lock body scroll when mobile menu open ── */
+  useEffect(() => {
+    document.body.style.overflow = menu ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menu]);
+
   /* ── ⌘K shortcut ── */
   useEffect(() => {
     const handler = (e) => {
@@ -117,8 +122,7 @@ const Nav = () => {
 
   /* ── Helpers ── */
   const logout = () => {
-    sessionStorage.removeItem('login');
-    setlogin(false);
+    authLogout();           // clears Zustand + localStorage token + Firebase
     setProfileOpen(false);
     navigate('/');
   };
@@ -182,8 +186,8 @@ const Nav = () => {
 {/* ── Main nav row ── */}
         <div className="flex items-center justify-between px-4 sm:px-8 py-3.5">
 
-          {/* LEFT — links */}
-            <div className="flex-1 flex items-center justify-start gap-6 sm:gap-8">
+          {/* LEFT — links (desktop only) */}
+            <div className="flex-1 hidden sm:flex items-center justify-start gap-6 sm:gap-8">
             {navLinks.map((link) => {
               const active = location.pathname === link.to;
               return (
@@ -285,6 +289,10 @@ const Nav = () => {
                         { icon: 'ri-user-line', label: t.profile, to: '/profile' },
                         { icon: 'ri-shopping-bag-3-line', label: t.orders, to: '/orders' },
                         { icon: 'ri-heart-line', label: t.wishlist, to: '/wishlist' },
+                        // Admin link — only shown to admin users
+                        ...(isAdmin()
+                          ? [{ icon: 'ri-dashboard-line', label: '👑 Admin Dashboard', to: '/admin' }]
+                          : []),
                       ].map(item => (
                         <Link key={item.to} to={item.to} onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition-colors text-sm text-gray-700 hover:text-[#E8650A]">
                           <i className={`${item.icon} text-base`} /> {item.label}
@@ -311,18 +319,32 @@ const Nav = () => {
             </button>
 
             {/* Wishlist */}
-            <div className="relative cursor-pointer" onClick={() => navigate(login ? '/wishlist' : '/login')}>
-              <i className={`ri-heart-line text-xl transition-colors ${iconColor} ${iconHover}`} />
+            <button
+              onClick={() => navigate(login ? '/wishlist' : '/login')}
+              className={`relative transition-colors ${iconColor} ${iconHover}`}
+              aria-label="Wishlist"
+            >
+              <i className={`ri-heart-line text-xl transition-colors`} />
               {wishlistCount > 0 && <span className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-bold">{wishlistCount}</span>}
-            </div>
+            </button>
 
             {/* Cart */}
-            <div className="relative cursor-pointer" onClick={() => navigate('/addToCart')}>
-              <i className={`ri-shopping-bag-line text-xl transition-colors ${iconColor} ${iconHover}`} />
-              <motion.span className="absolute -top-2 -right-2 bg-[#E8650A] text-white rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-bold" animate={{ scale: totalp > 0 ? [1, 1.2, 1] : 1 }} transition={{ repeat: Infinity, duration: 2 }}>
-                {totalp}
-              </motion.span>
-            </div>
+            <button
+              onClick={() => navigate('/addToCart')}
+              className={`relative transition-colors ${iconColor} ${iconHover}`}
+              aria-label="Cart"
+            >
+              <i className={`ri-shopping-bag-line text-xl`} />
+              {cartCount > 0 && (
+                <motion.span
+                  className="absolute -top-2 -right-2 bg-[#E8650A] text-white rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-bold"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  {cartCount}
+                </motion.span>
+              )}
+            </button>
 
             {/* Mobile menu toggle */}
             <button onClick={() => setMenu(!menu)} className={`sm:hidden transition-colors ${iconColor} ${iconHover}`}>
@@ -373,6 +395,11 @@ const Nav = () => {
                     <Link to="/orders" onClick={() => setMenu(false)} className="text-white/80 hover:text-white py-2 px-4 rounded-xl hover:bg-white/10 transition-all flex items-center gap-2">
                       <i className="ri-shopping-bag-3-line" /> {t.orders}
                     </Link>
+                    {isAdmin() && (
+                      <Link to="/admin" onClick={() => setMenu(false)} className="text-yellow-300 hover:text-white py-2 px-4 rounded-xl hover:bg-white/10 transition-all flex items-center gap-2">
+                        <i className="ri-dashboard-line" /> 👑 Admin Dashboard
+                      </Link>
+                    )}
                   </>
                 )}
               </nav>
@@ -399,11 +426,11 @@ const Nav = () => {
           )}
         </AnimatePresence>
 
-        {/* Mobile overlay */}
+        {/* Mobile overlay — sits BEHIND the side menu (z-40) */}
         <AnimatePresence>
           {menu && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-end ..."
+              className="fixed inset-0 z-40 bg-black/50 sm:hidden"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setMenu(false)}
             />

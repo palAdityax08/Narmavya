@@ -11,6 +11,7 @@ import SignUp from './Componets/singUp.jsx';
 import Login from './Componets/login.jsx';
 import AddToCart from './Componets/Others/addTocart.jsx';
 import ProtectedRoute from "./Componets/ProtectedRoute.jsx";
+import AdminRoute from "./Componets/AdminRoute.jsx";
 import Detail from './Componets/detail.jsx';
 import Payment from './Componets/payment.jsx';
 import Wishlist from './Componets/wishlist.jsx';
@@ -18,6 +19,7 @@ import ProductInfo from './Componets/Others/productInfo.jsx';
 import Profile from './Componets/profile.jsx';
 import Orders from './Componets/orders.jsx';
 import OrderDetail from './Componets/orderDetail.jsx';
+import AdminDashboard from './Componets/Admin/AdminDashboard.jsx';
 
 // ── Auto-restore session ─────────────────────────────────────────────────────
 // If a user is stored in localStorage (registered/logged in before),
@@ -72,6 +74,13 @@ const routers = createBrowserRouter(
     {
       path: "orders/:orderId",
       element: <ProtectedRoute><OrderDetail /></ProtectedRoute>
+    },
+
+    // ── ADMIN-ONLY ROUTES ─────────────────────────────
+    // Only users with role="admin" can access. Others are redirected to /.
+    {
+      path: "admin",
+      element: <AdminRoute><AdminDashboard /></AdminRoute>
     },
   ]
 );

@@ -260,7 +260,7 @@ const Home = () => {
           {/* ── Scroll hint — animated bounce ── */}
           <motion.button
             onClick={handleScrollToContent}
-            className="absolute bottom-9 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/40 hover:text-white/80 transition-colors cursor-pointer bg-transparent border-0 outline-none"
+            className="absolute bottom-9 left-1/2.5 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/40 hover:text-white/80 transition-colors cursor-pointer bg-transparent border-0 outline-none"
             animate={{ y: [0, 8, 0] }}
             transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
           >
@@ -291,7 +291,7 @@ const Home = () => {
       {/* ═══════════════════════════════════════════════════════════
           CATEGORY EXPLORER — HORIZONTAL SCROLLABLE CHIPS
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-container py-16">
+      <section className="section-container py-10 sm:py-16">
         <Reveal>
           <EditorialHeading
             overline="Shop by Category"
@@ -300,7 +300,7 @@ const Home = () => {
           />
         </Reveal>
 
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="mt-8 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {mpCategories.map((cat, idx) => {
             const count = mpProducts.filter((p) => p.category === cat.id).length;
             return (
@@ -328,7 +328,7 @@ const Home = () => {
       {/* ═══════════════════════════════════════════════════════════
           FEATURED PRODUCTS — EDITORIAL GRID
       ═══════════════════════════════════════════════════════════ */}
-      <section className="py-20" style={{ background: 'linear-gradient(180deg, #FFF8F0 0%, #FDF6EC 100%)' }}>
+      <section className="py-14 sm:py-20" style={{ background: 'linear-gradient(180deg, #FFF8F0 0%, #FDF6EC 100%)' }}>
         <div className="section-container">
           <Reveal className="flex flex-col sm:flex-row items-end justify-between gap-6 mb-14">
             <EditorialHeading
@@ -362,24 +362,24 @@ const Home = () => {
       {/* ═══════════════════════════════════════════════════════════
           FULL-BLEED EDITORIAL BANNER — CHANDERI SILK
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-container py-10">
+      <section className="section-container py-6 sm:py-10">
         <ParallaxBanner img={image1}>
           <div
-            className="relative h-[55vh] min-h-[380px] flex items-end p-10 sm:p-16"
+            className="relative h-[42vh] sm:h-[55vh] min-h-[260px] sm:min-h-[380px] flex items-end p-6 sm:p-10 md:p-16"
             style={{ background: 'linear-gradient(to top, rgba(10,5,0,0.8) 0%, rgba(10,5,0,0.2) 60%, transparent 100%)' }}
           >
             <div className="max-w-xl">
               <span className="label-overline text-white/50 mb-3">Narmada Weaves</span>
               <h3
                 className="font-display font-black text-white leading-tight mb-4"
-                style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
+                style={{ fontSize: 'clamp(1.6rem, 5vw, 4rem)' }}
               >
                 Chanderi &amp; Maheshwari Silk
               </h3>
-              <p className="text-white/65 text-sm mb-7 leading-relaxed max-w-md">
+              <p className="text-white/65 text-sm mb-5 sm:mb-7 leading-relaxed max-w-md hidden sm:block">
                 Woven on the banks of the Narmada for 300+ years. These GI-tagged silks carry the legacy of queens and craftswomen alike.
               </p>
-              <Link to="/products/silk-textiles" className="btn-primary text-sm px-8 py-3.5">
+              <Link to="/products/silk-textiles" className="btn-primary text-sm px-6 sm:px-8 py-3 sm:py-3.5">
                 Shop Silk & Textiles <i className="ri-arrow-right-line" />
               </Link>
             </div>
@@ -391,7 +391,7 @@ const Home = () => {
           ARTISAN BENTO — EDITORIAL SPOTLIGHT
       ═══════════════════════════════════════════════════════════ */}
 <section
-  className="py-24 relative overflow-hidden"
+  className="py-14 sm:py-24 relative overflow-hidden"
   style={{ background: 'linear-gradient(135deg, #1A1209 0%, #1B6B3A 70%, #0F4A27 100%)' }}
 >
   {/* Background Gond pattern */}
@@ -538,8 +538,8 @@ you carry forward a legacy.
       {/* ═══════════════════════════════════════════════════════════
           ORGANIC PICKS — SPLIT LAYOUT
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-container py-20">
-        <Reveal className="flex flex-col sm:flex-row items-end justify-between gap-6 mb-14">
+      <section className="section-container py-12 sm:py-20">
+        <Reveal className="flex flex-col sm:flex-row items-end justify-between gap-6 mb-10 sm:mb-14">
           <EditorialHeading
             overline="Farm to Table"
             title="Organic Picks from MP"
@@ -569,7 +569,7 @@ you carry forward a legacy.
       {/* ═══════════════════════════════════════════════════════════
           DOUBLE PROMO BANNERS
       ═══════════════════════════════════════════════════════════ */}
-      <section className="section-container pb-10">
+      <section className="section-container pb-6 sm:pb-10">
         <Reveal>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {[
@@ -593,7 +593,7 @@ you carry forward a legacy.
               <Link key={b.title} to={b.link}>
                 <motion.div
                   whileHover={{ scale: 1.01 }}
-                  className="relative h-[260px] rounded-3xl overflow-hidden cursor-pointer group"
+                className="relative h-[220px] sm:h-[260px] rounded-3xl overflow-hidden cursor-pointer group"
                 >
                   <img
                     src={b.img}
@@ -601,10 +601,10 @@ you carry forward a legacy.
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0" style={{ background: b.overlay }} />
-                  <div className="absolute bottom-0 left-0 p-8">
-                    <span className="badge badge-saffron mb-3 block w-fit">{b.tag}</span>
-                    <h3 className="font-display font-black text-white text-2xl mb-1">{b.title}</h3>
-                    <p className="text-white/60 text-sm">{b.sub}</p>
+                  <div className="absolute bottom-0 left-0 p-5 sm:p-8">
+                    <span className="badge badge-saffron mb-2 sm:mb-3 block w-fit">{b.tag}</span>
+                    <h3 className="font-display font-black text-white text-xl sm:text-2xl mb-1">{b.title}</h3>
+                    <p className="text-white/60 text-sm hidden sm:block">{b.sub}</p>
                   </div>
                   <div className="absolute top-5 right-5 w-10 h-10 glass rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                     <i className="ri-arrow-right-up-line" />
@@ -619,9 +619,9 @@ you carry forward a legacy.
       {/* ═══════════════════════════════════════════════════════════
           HANDICRAFTS ROW — EDITORIAL 3-ACROSS
       ═══════════════════════════════════════════════════════════ */}
-      <section className="py-20" style={{ background: '#fff' }}>
+      <section className="py-14 sm:py-20" style={{ background: '#fff' }}>
         <div className="section-container">
-          <Reveal className="flex flex-col sm:flex-row items-end justify-between gap-4 mb-14">
+          <Reveal className="flex flex-col sm:flex-row items-end justify-between gap-4 mb-10 sm:mb-14">
             <EditorialHeading
               overline="Master Artistry"
               title="Handicrafts of MP"
@@ -735,7 +735,7 @@ you carry forward a legacy.
               {
                 title: 'How Gond Art Conquered International Galleries',
                 date:  'April 10, 2026',
-                img:   '/artisan/gond.jpeg',
+                img:   '/artisan/gond1.jpeg',
                 tag:   'Tribal Art',
                 read:  '8 min read',
               },
@@ -777,7 +777,7 @@ you carry forward a legacy.
       {/* ═══════════════════════════════════════════════════════════
           NEWSLETTER — FULL-BLEED SAFFRON
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden py-24 px-6" style={{ background: 'linear-gradient(135deg, #E8650A 0%, #C4500A 60%, #3E1B00 100%)' }}>
+      <section className="relative overflow-hidden py-14 sm:py-24 px-4 sm:px-6" style={{ background: 'linear-gradient(135deg, #E8650A 0%, #C4500A 60%, #3E1B00 100%)' }}>
         <div className="absolute inset-0 bagh-stripe opacity-10 pointer-events-none" />
         <Reveal className="relative z-10 max-w-2xl mx-auto text-center text-white">
           <div className="label-overline justify-center text-white/50 mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>
@@ -790,7 +790,7 @@ you carry forward a legacy.
             Get exclusive deals, new artisan stories &amp; seasonal picks — curated every fortnight.
           </p>
           <form
-            className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+            className="flex flex-col gap-3 max-w-md mx-auto"
             onSubmit={(e) => {
               e.preventDefault();
               e.target.reset();
