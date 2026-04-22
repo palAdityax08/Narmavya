@@ -1,8 +1,12 @@
-// ─── Narmavya Backend — Express Server Entry Point ───────────────────────────
+// ─── Narmavya Backend — Vercel-compatible Express Entry Point ─────────────────
+// Works in BOTH environments:
+//   • Local dev  → `node server.js`  (calls app.listen)
+//   • Vercel     → exports `app` as a serverless function handler
 require('dotenv').config();
-const express   = require('express');
-const mongoose  = require('mongoose');
-const cors      = require('cors');
+
+const express  = require('express');
+const mongoose = require('mongoose');
+const cors     = require('cors');
 
 // ── Route imports ──────────────────────────────────────────────────────────────
 const authRoutes    = require('./routes/auth');
@@ -11,46 +15,111 @@ const orderRoutes   = require('./routes/orders');
 const reviewRoutes  = require('./routes/reviews');
 const paymentRoutes = require('./routes/payment');
 
-const app  = express();
-const PORT = process.env.PORT || 5000;
+const app = express();
 
-// ── Middleware ─────────────────────────────────────────────────────────────────
+// ── CORS ───────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
-  ...(process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',').map(o => o.trim()) : []),
+  ...(process.env.CLIENT_ORIGIN
+    ? process.env.CLIENT_ORIGIN.split(',').map(o => o.trim())
+    : []),
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.some(o => origin === o || origin.endsWith('.vercel.app'))) {
+    if (!origin) return callback(null, true);            // curl / Postman / mobile
+    if (
+      allowedOrigins.some(o => origin === o) ||
+      origin.endsWith('.vercel.app')                     // any Vercel preview URL
+    ) {
       return callback(null, true);
     }
-    callback(new Error('Not allowed by CORS: ' + origin));
+    callback(new Error('CORS: origin not allowed — ' + origin));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Handle preflight OPTIONS for all routes
+app.options('*', cors());
+
 app.use(express.json({ limit: '10mb' }));
 
-// ── Health check ───────────────────────────────────────────────────────────────
-app.get('/api/health', (_req, res) => {
+// ── Lazy MongoDB connection with caching ────────────────────────────────────────
+// In serverless land there is no "start up then receive requests".
+// Instead we connect on the first request and cache the promise so
+// subsequent invocations reuse the existing connection.
+const MONGO_OPTIONS = {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS:          45000,
+};
+
+let dbConnectionPromise = null;
+
+const connectDB = () => {
+  if (mongoose.connection.readyState === 1) {
+    return Promise.resolve(); // already connected
+  }
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = mongoose
+      .connect(process.env.MONGO_URI, MONGO_OPTIONS)
+      .then(() => {
+        console.log('✅ MongoDB Atlas connected');
+      })
+      .catch(err => {
+        dbConnectionPromise = null; // reset so next request retries
+        console.error('❌ MongoDB connection error:', err.message);
+        throw err;
+      });
+  }
+  return dbConnectionPromise;
+};
+
+// ── DB-connect middleware (runs before every API request) ──────────────────────
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(503).json({
+      success: false,
+      message: 'Database unavailable. Please try again in a moment.',
+    });
+  }
+});
+
+// ── Routes ─────────────────────────────────────────────────────────────────────
+app.get('/', (_req, res) => {
   res.json({
-    status: 'ok',
+    service:   'Narmavya API',
+    status:    'running',
+    db:        mongoose.connection.readyState === 1 ? 'connected' : 'connecting',
     timestamp: new Date().toISOString(),
-    service: 'Narmavya API',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
 
-// ── Mount routes ───────────────────────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status:    'ok',
+    service:   'Narmavya API',
+    db:        mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use('/api/auth',     authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
 app.use('/api/reviews',  reviewRoutes);
 app.use('/api/payment',  paymentRoutes);
+
+// ── 404 catch-all ──────────────────────────────────────────────────────────────
+app.use((_req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
 
 // ── Global error handler ───────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
@@ -61,57 +130,29 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// ── Start listening — auto-increment port on EADDRINUSE ───────────────────────
-const startServer = (port) => {
-  const server = app.listen(port, () => {
-    console.log(`\n🚀 Narmavya API  →  http://localhost:${port}`);
-    console.log(`📋 Routes: /api/auth | /api/products | /api/orders | /api/reviews | /api/payment\n`);
-  });
-
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.warn(`⚠️  Port ${port} busy — trying ${port + 1}...`);
-      server.close();
-      startServer(port + 1);   // try next port automatically
-    } else {
-      console.error('Server error:', err);
-    }
-  });
-};
-
-// ── Connect to MongoDB Atlas then start listening ─────────────────────────────
-const MONGO_OPTIONS = {
-  serverSelectionTimeoutMS: 10000,  // 10s to find a server
-  socketTimeoutMS:          45000,  // 45s socket timeout
-};
-
-const connectWithRetry = (attempt = 1) => {
-  console.log(`🔄 MongoDB connecting... (attempt ${attempt})`);
-  mongoose
-    .connect(process.env.MONGO_URI, MONGO_OPTIONS)
+// ── Local dev: start listening ─────────────────────────────────────────────────
+// On Vercel this block is NEVER reached — Vercel uses `module.exports` below.
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  connectDB()
     .then(() => {
-      console.log('✅ MongoDB Atlas connected');
-      startServer(PORT);
+      const server = app.listen(PORT, () => {
+        console.log(`\n🚀 Narmavya API  →  http://localhost:${PORT}`);
+        console.log(`📋 Routes: /api/auth | /api/products | /api/orders | /api/reviews | /api/payment\n`);
+      });
+      server.on('error', err => {
+        if (err.code === 'EADDRINUSE') {
+          console.warn(`Port ${PORT} busy — trying ${PORT + 1}`);
+          app.listen(PORT + 1);
+        }
+      });
     })
-    .catch((err) => {
-      console.error(`❌ MongoDB connection failed (attempt ${attempt}):`, err.message);
-
-      // Give a clear hint about the IP whitelist issue
-      if (err.message.includes('whitelist') || err.message.includes('IP') || err.message.includes('ENOTFOUND') || err.message.includes('Could not connect')) {
-        console.error('\n💡 FIX: Go to MongoDB Atlas → Network Access → + ADD IP ADDRESS');
-        console.error('   → Click "ALLOW ACCESS FROM ANYWHERE" → Confirm\n');
-      }
-
-      // Retry up to 3 times with exponential back-off
-      if (attempt < 3) {
-        const delay = attempt * 5000;
-        console.log(`⏳ Retrying in ${delay / 1000}s...\n`);
-        setTimeout(() => connectWithRetry(attempt + 1), delay);
-      } else {
-        console.error('💀 All MongoDB connection attempts failed. Exiting.\n');
-        process.exit(1);
-      }
+    .catch(err => {
+      console.error('Failed to start server:', err.message);
+      process.exit(1);
     });
-};
+}
 
-connectWithRetry();
+// ── Vercel serverless export ───────────────────────────────────────────────────
+// @vercel/node calls this as a regular HTTP handler — no listen() needed.
+module.exports = app;

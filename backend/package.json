@@ -4,10 +4,13 @@
   "description": "Narmavya e-commerce REST API — MongoDB + Express",
   "main": "server.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node server.js",
-    "predev": "node scripts/killPort.js",
     "dev": "nodemon server.js",
+    "predev-local": "node scripts/killPort.js",
     "seed": "node scripts/seedProducts.js"
   },
   "dependencies": {
